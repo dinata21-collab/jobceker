@@ -14,6 +14,7 @@ window.app = function () {
     editingJob: null,
     adminTab: 'jobs',
     applications: [],
+    appliedJobs: [],
     applyJobTitle: '',
     applyJobCompany: '',
     applyJobId: 0,
@@ -43,6 +44,7 @@ window.app = function () {
         this.user = JSON.parse(savedUser);
       }
       this.loadJobs();
+      if (this.user && this.user.role === 'jobseeker') this.loadAppliedJobs();
     },
 
     navigate: function (page) {
@@ -50,7 +52,10 @@ window.app = function () {
       this.error = '';
       this.success = '';
       this.adminTab = 'jobs';
-      if (page === 'jobs') this.loadJobs();
+      if (page === 'jobs') {
+        this.loadJobs();
+        if (this.user && this.user.role === 'jobseeker') this.loadAppliedJobs();
+      }
       if (page === 'admin') {
         this.loadMyJobs();
         this.loadApplications();
@@ -144,6 +149,22 @@ window.app = function () {
       } catch (err) {
         console.error('Gagal load my jobs:', err);
       }
+    },
+
+    loadAppliedJobs: async function () {
+      try {
+        var res = await fetch(API_URL + '/applications/my', {
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        var data = await res.json();
+        this.appliedJobs = data.data || [];
+      } catch (err) {
+        console.error('Gagal load applied jobs:', err);
+      }
+    },
+
+    isApplied: function (jobId) {
+      return this.appliedJobs.indexOf(jobId) !== -1;
     },
 
     openModal: function (job) {
@@ -273,6 +294,7 @@ window.app = function () {
         this.applyForm.phone = '';
         this.applyForm.cvFile = null;
         this.applyForm.photoFile = null;
+        await this.loadAppliedJobs();
         var self = this;
         setTimeout(function () { self.showApplyModal = false; self.success = ''; }, 1500);
       } catch (err) {
