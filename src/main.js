@@ -41,6 +41,7 @@ window.app = function () {
       description: '',
       location: '',
       salary: '',
+      deadline: '',
     },
 
     init: function () {
@@ -233,6 +234,11 @@ window.app = function () {
       return this.appliedJobs.indexOf(jobId) !== -1;
     },
 
+    isExpired: function (deadline) {
+      if (!deadline) return false;
+      return new Date(deadline) < new Date();
+    },
+
     loadMyApplications: async function () {
       try {
         var res = await fetch(API_URL + '/applications/history', {
@@ -253,12 +259,14 @@ window.app = function () {
         this.form.description = job.description;
         this.form.location = job.location || '';
         this.form.salary = job.salary || '';
+        this.form.deadline = job.deadline ? job.deadline.split('T')[0] : '';
       } else {
         this.form.title = '';
         this.form.companyName = '';
         this.form.description = '';
         this.form.location = '';
         this.form.salary = '';
+        this.form.deadline = '';
       }
       this.showModal = true;
     },
@@ -274,6 +282,7 @@ window.app = function () {
         description: this.form.description,
         location: this.form.location,
         salary: this.form.salary,
+        deadline: this.form.deadline || null,
       };
 
       try {
