@@ -2,16 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/job-portal-frontend/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Job Portal</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/src/main.js"></script>
     <style>
       [x-cloak] { display: none !important; }
       body { font-family: 'Inter', sans-serif; }
+      .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
   </head>
   <body class="bg-white min-h-screen text-gray-900">
@@ -130,14 +130,10 @@
         <div class="flex items-center justify-between mb-6">
           <h1 class="text-2xl font-bold">Admin Panel</h1>
         </div>
-
-        <!-- Tabs -->
         <div class="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
           <button @click="adminTab = 'jobs'; loadJobs()" :class="adminTab === 'jobs' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Lowongan</button>
           <button @click="adminTab = 'applications'; loadApplications()" :class="adminTab === 'applications' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Lamaran</button>
         </div>
-
-        <!-- Tab Lowongan -->
         <div x-show="adminTab === 'jobs'">
           <div class="flex items-center justify-between mb-4">
             <p class="text-gray-500 text-sm" x-text="jobs.length + ' lowongan tersedia'"></p>
@@ -171,8 +167,6 @@
             </table>
           </div>
         </div>
-
-        <!-- Tab Lamaran -->
         <div x-show="adminTab === 'applications'">
           <div class="flex items-center justify-between mb-4">
             <p class="text-gray-500 text-sm" x-text="applications.length + ' lamaran masuk'"></p>
@@ -308,5 +302,189 @@
         </div>
       </div>
     </div>
+    <script>
+      var API_URL = 'https://job-portal-backend-production-4462.up.railway.app/api';
+
+      window.app = function () {
+        return {
+          page: 'login',
+          user: null,
+          token: null,
+          jobs: [],
+          error: '',
+          success: '',
+          loading: false,
+          showModal: false,
+          showApplyModal: false,
+          editingJob: null,
+          adminTab: 'jobs',
+          applications: [],
+          applyJobTitle: '',
+          applyJobCompany: '',
+          applyJobId: 0,
+          applyForm: { fullName: '', phone: '', cvFile: null, photoFile: null },
+          form: { name: '', email: '', password: '', role: 'jobseeker', title: '', companyName: '', description: '', location: '', salary: '' },
+
+          init: function () {
+            var savedToken = localStorage.getItem('token');
+            var savedUser = localStorage.getItem('user');
+            if (savedToken && savedUser) {
+              this.token = savedToken;
+              this.user = JSON.parse(savedUser);
+            }
+            this.loadJobs();
+          },
+
+          navigate: function (page) {
+            this.page = page;
+            this.error = '';
+            this.success = '';
+            this.adminTab = 'jobs';
+            if (page === 'jobs') this.loadJobs();
+            if (page === 'admin') { this.loadJobs(); this.loadApplications(); }
+          },
+
+          login: async function () {
+            this.loading = true; this.error = '';
+            try {
+              var res = await fetch(API_URL + '/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: this.form.email, password: this.form.password }),
+              });
+              var data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Login gagal');
+              this.token = data.token; this.user = data.user;
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('user', JSON.stringify(data.user));
+              this.form.email = ''; this.form.password = '';
+              this.navigate(data.user.role === 'admin' ? 'admin' : 'jobs');
+            } catch (err) { this.error = err.message; } finally { this.loading = false; }
+          },
+
+          register: async function () {
+            this.loading = true; this.error = ''; this.success = '';
+            try {
+              var res = await fetch(API_URL + '/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: this.form.name, email: this.form.email, password: this.form.password, role: this.form.role }),
+              });
+              var data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Register gagal');
+              this.success = 'Register berhasil! Silakan login.';
+              this.form.name = ''; this.form.email = ''; this.form.password = ''; this.form.role = 'jobseeker';
+              var self = this;
+              setTimeout(function () { self.navigate('login'); }, 1500);
+            } catch (err) { this.error = err.message; } finally { this.loading = false; }
+          },
+
+          logout: function () {
+            this.user = null; this.token = null;
+            localStorage.removeItem('token'); localStorage.removeItem('user');
+            this.navigate('login');
+          },
+
+          loadJobs: async function () {
+            try {
+              var res = await fetch(API_URL + '/jobs');
+              var data = await res.json();
+              this.jobs = data.data || [];
+            } catch (err) { console.error('Gagal load jobs:', err); }
+          },
+
+          openModal: function (job) {
+            this.editingJob = job || null;
+            if (job) {
+              this.form.title = job.title; this.form.companyName = job.companyName;
+              this.form.description = job.description; this.form.location = job.location || ''; this.form.salary = job.salary || '';
+            } else {
+              this.form.title = ''; this.form.companyName = ''; this.form.description = ''; this.form.location = ''; this.form.salary = '';
+            }
+            this.showModal = true;
+          },
+
+          editJob: function (job) { this.openModal(job); },
+
+          saveJob: async function () {
+            var body = { title: this.form.title, companyName: this.form.companyName, description: this.form.description, location: this.form.location, salary: this.form.salary };
+            try {
+              var url = this.editingJob ? API_URL + '/jobs/' + this.editingJob.id : API_URL + '/jobs';
+              var method = this.editingJob ? 'PUT' : 'POST';
+              var res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + this.token }, body: JSON.stringify(body) });
+              if (!res.ok) { var data = await res.json(); throw new Error(data.error || 'Gagal menyimpan job'); }
+              this.showModal = false; this.editingJob = null; await this.loadJobs();
+            } catch (err) { this.error = err.message; }
+          },
+
+          deleteJob: async function (id) {
+            if (!confirm('Yakin ingin menghapus job ini?')) return;
+            try {
+              var res = await fetch(API_URL + '/jobs/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + this.token } });
+              if (!res.ok) throw new Error('Gagal menghapus job');
+              await this.loadJobs();
+            } catch (err) { this.error = err.message; }
+          },
+
+          openApplyModal: function (job) {
+            this.applyJobId = job.id; this.applyJobTitle = job.title; this.applyJobCompany = job.companyName;
+            this.applyForm.fullName = this.user ? this.user.name : '';
+            this.applyForm.phone = ''; this.applyForm.cvFile = null; this.applyForm.photoFile = null;
+            this.error = ''; this.success = ''; this.showApplyModal = true;
+          },
+
+          submitApplication: async function () {
+            if (!this.applyJobId) { this.error = 'Terjadi kesalahan, silakan tutup dan buka ulang modal'; return; }
+            this.loading = true; this.error = '';
+            try {
+              var formData = new FormData();
+              formData.append('jobId', this.applyJobId);
+              formData.append('fullName', this.applyForm.fullName);
+              formData.append('phone', this.applyForm.phone);
+              if (this.applyForm.cvFile) formData.append('cv', this.applyForm.cvFile);
+              if (this.applyForm.photoFile) formData.append('photo', this.applyForm.photoFile);
+              var res = await fetch(API_URL + '/applications', { method: 'POST', headers: { Authorization: 'Bearer ' + this.token }, body: formData });
+              var data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Gagal mengirim lamaran');
+              this.success = 'Lamaran berhasil dikirim!';
+              this.applyForm.fullName = ''; this.applyForm.phone = ''; this.applyForm.cvFile = null; this.applyForm.photoFile = null;
+              var self = this;
+              setTimeout(function () { self.showApplyModal = false; self.success = ''; }, 1500);
+            } catch (err) { this.error = err.message; } finally { this.loading = false; }
+          },
+
+          loadApplications: async function () {
+            try {
+              var res = await fetch(API_URL + '/applications', { headers: { Authorization: 'Bearer ' + this.token } });
+              var data = await res.json();
+              this.applications = data.data || [];
+            } catch (err) { console.error('Gagal load applications:', err); }
+          },
+
+          updateStatus: async function (id, status) {
+            try {
+              var res = await fetch(API_URL + '/applications/' + id + '/status', {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + this.token },
+                body: JSON.stringify({ status }),
+              });
+              if (!res.ok) throw new Error('Gagal update status');
+              await this.loadApplications();
+            } catch (err) { this.error = err.message; }
+          },
+
+          exportExcel: async function () {
+            try {
+              var res = await fetch(API_URL + '/applications/export', { headers: { Authorization: 'Bearer ' + this.token } });
+              if (!res.ok) throw new Error('Gagal download');
+              var blob = await res.blob();
+              var url = window.URL.createObjectURL(blob);
+              var a = document.createElement('a'); a.href = url; a.download = 'lamaran.xlsx';
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+            } catch (err) { this.error = err.message; }
+          },
+        };
+      };
+    </script>
   </body>
 </html>
