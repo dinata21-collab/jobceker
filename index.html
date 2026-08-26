@@ -19,8 +19,9 @@
       <!-- NAVBAR -->
       <nav class="border-b border-gray-200">
         <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span class="text-lg font-bold cursor-pointer" @click="navigate(user ? 'jobs' : 'login')">Jobceker</span>
+          <span class="text-lg font-bold cursor-pointer" @click="navigate('home')">Jobceker</span>
           <div class="flex items-center gap-4 text-sm">
+            <button @click="navigate('home')" class="text-gray-600 hover:text-gray-900">Home</button>
             <template x-if="!user">
               <div class="flex items-center gap-4">
                 <button @click="navigate('login')" class="text-gray-600 hover:text-gray-900">Login</button>
@@ -45,6 +46,70 @@
           </div>
         </div>
       </nav>
+
+      <!-- HOME -->
+      <div x-show="page === 'home'" x-transition>
+        <!-- Hero -->
+        <div class="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
+          <h1 class="text-5xl font-bold leading-tight">Cari Kerja<br><span class="text-gray-400">Jadi Lebih Mudah</span></h1>
+          <p class="text-gray-500 mt-6 text-lg max-w-lg mx-auto">Temukan lowongan kerja terbaik dari perusahaan terpercaya. Lamar sekarang dan wujudkan karir impianmu.</p>
+          <div class="flex justify-center gap-4 mt-10">
+            <button @click="navigate('jobs')" class="bg-gray-900 text-white px-8 py-3 rounded-lg text-sm font-medium hover:bg-gray-800">Lihat Lowongan</button>
+            <button @click="navigate('register')" class="border border-gray-300 px-8 py-3 rounded-lg text-sm font-medium hover:bg-gray-50">Daftar Sekarang</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="border-t border-gray-100 bg-gray-50">
+          <div class="max-w-5xl mx-auto px-6 py-12 grid grid-cols-3 gap-8 text-center">
+            <div>
+              <div class="text-3xl font-bold text-gray-900" x-text="jobs.length || '0'"></div>
+              <div class="text-sm text-gray-500 mt-1">Lowongan Tersedia</div>
+            </div>
+            <div>
+              <div class="text-3xl font-bold text-gray-900">Gratis</div>
+              <div class="text-sm text-gray-500 mt-1">Biaya Pendaftaran</div>
+            </div>
+            <div>
+              <div class="text-3xl font-bold text-gray-900">24/7</div>
+              <div class="text-sm text-gray-500 mt-1">Akses Kapan Saja</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Features -->
+        <div class="max-w-5xl mx-auto px-6 py-16">
+          <h2 class="text-2xl font-bold text-center mb-12">Kenapa JobCeker?</h2>
+          <div class="grid grid-cols-3 gap-8">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </div>
+              <h3 class="font-semibold mb-1">Mudah Dicari</h3>
+              <p class="text-sm text-gray-500">Temukan lowongan sesuai lokasi dan keahlianmu</p>
+            </div>
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              </div>
+              <h3 class="font-semibold mb-1">Lamar Cepat</h3>
+              <p class="text-sm text-gray-500">Unggah CV & foto, lamar dalam hitungan detik</p>
+            </div>
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              </div>
+              <h3 class="font-semibold mb-1">Update Status</h3>
+              <p class="text-sm text-gray-500">Pantau status lamaranmu secara real-time</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
+          &copy; 2026 JobCeker. All rights reserved.
+        </div>
+      </div>
 
       <!-- LOGIN -->
       <div x-show="page === 'login'" x-transition class="max-w-sm mx-auto mt-24 px-6">
@@ -511,7 +576,7 @@
 
       window.app = function () {
         return {
-          page: 'login',
+          page: 'home',
           user: null,
           token: null,
           jobs: [],
@@ -552,6 +617,7 @@
             this.error = '';
             this.success = '';
             this.adminTab = 'jobs';
+            if (page === 'home') { this.loadJobs(); }
             if (page === 'jobs') { this.loadJobs(); if (this.user && this.user.role === 'jobseeker') this.loadAppliedJobs(); }
             if (page === 'history') this.loadMyApplications();
             if (page === 'admin') { this.loadMyJobs(); this.loadApplications(); }
@@ -572,7 +638,7 @@
               localStorage.setItem('token', data.token);
               localStorage.setItem('user', JSON.stringify(data.user));
               this.form.email = ''; this.form.password = '';
-              this.navigate(data.user.role === 'admin' ? 'admin' : 'jobs');
+              this.navigate(data.user.role === 'admin' ? 'admin' : data.user.role === 'superadmin' ? 'developer' : 'jobs');
             } catch (err) { this.error = err.message; } finally { this.loading = false; }
           },
 
@@ -621,7 +687,7 @@
           logout: function () {
             this.user = null; this.token = null;
             localStorage.removeItem('token'); localStorage.removeItem('user');
-            this.navigate('login');
+            this.navigate('home');
           },
 
           loadJobs: async function () {

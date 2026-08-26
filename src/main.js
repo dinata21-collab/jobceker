@@ -2,7 +2,7 @@ var API_URL = 'http://localhost:3000/api';
 
 window.app = function () {
   return {
-    page: 'login',
+      page: 'home',
     user: null,
     token: null,
     jobs: [],
@@ -59,6 +59,7 @@ window.app = function () {
       this.error = '';
       this.success = '';
       this.adminTab = 'jobs';
+      if (page === 'home') { this.loadJobs(); }
       if (page === 'jobs') {
         this.loadJobs();
         if (this.user && this.user.role === 'jobseeker') this.loadAppliedJobs();
@@ -191,7 +192,7 @@ window.app = function () {
       this.token = null;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      this.navigate('login');
+      this.navigate('home');
     },
 
     loadJobs: async function () {
