@@ -15,6 +15,7 @@ window.app = function () {
     adminTab: 'jobs',
     applications: [],
     appliedJobs: [],
+    myApplications: [],
     applyJobTitle: '',
     applyJobCompany: '',
     applyJobId: 0,
@@ -56,6 +57,7 @@ window.app = function () {
         this.loadJobs();
         if (this.user && this.user.role === 'jobseeker') this.loadAppliedJobs();
       }
+      if (page === 'history') this.loadMyApplications();
       if (page === 'admin') {
         this.loadMyJobs();
         this.loadApplications();
@@ -165,6 +167,18 @@ window.app = function () {
 
     isApplied: function (jobId) {
       return this.appliedJobs.indexOf(jobId) !== -1;
+    },
+
+    loadMyApplications: async function () {
+      try {
+        var res = await fetch(API_URL + '/applications/history', {
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        var data = await res.json();
+        this.myApplications = data.data || [];
+      } catch (err) {
+        console.error('Gagal load riwayat lamaran:', err);
+      }
     },
 
     openModal: function (job) {
