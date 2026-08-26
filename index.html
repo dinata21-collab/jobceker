@@ -63,6 +63,53 @@
           </button>
         </form>
         <p class="text-center text-sm text-gray-500 mt-6">Belum ada akun? <a @click.prevent="navigate('register')" href="#" class="text-gray-900 font-medium hover:underline">Daftar</a></p>
+        <p class="text-center text-sm text-gray-500 mt-2"><a @click.prevent="navigate('forgot')" href="#" class="text-gray-900 font-medium hover:underline">Lupa Password?</a></p>
+      </div>
+
+      <!-- FORGOT PASSWORD -->
+      <div x-show="page === 'forgot'" x-transition class="max-w-sm mx-auto mt-24 px-6">
+        <h1 class="text-2xl font-bold mb-1">Lupa Password</h1>
+        <p class="text-gray-500 text-sm mb-8">Masukkan email untuk mendapatkan kode reset</p>
+        <div x-show="error" class="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-6" x-text="error"></div>
+        <div x-show="success" class="bg-green-50 text-green-600 text-sm p-3 rounded-lg mb-6" x-text="success"></div>
+        <form @submit.prevent="forgotPassword()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+            <input x-model="form.email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <button type="submit" class="w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 mt-2" :disabled="loading">
+            <span x-show="!loading">Kirim Kode</span>
+            <span x-show="loading">Loading...</span>
+          </button>
+        </form>
+        <p class="text-center text-sm text-gray-500 mt-6"><a @click.prevent="navigate('login')" href="#" class="text-gray-900 font-medium hover:underline">Kembali ke Login</a></p>
+      </div>
+
+      <!-- RESET PASSWORD -->
+      <div x-show="page === 'reset'" x-transition class="max-w-sm mx-auto mt-24 px-6">
+        <h1 class="text-2xl font-bold mb-1">Reset Password</h1>
+        <p class="text-gray-500 text-sm mb-8">Masukkan kode 6 digit dari email</p>
+        <div x-show="error" class="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-6" x-text="error"></div>
+        <div x-show="success" class="bg-green-50 text-green-600 text-sm p-3 rounded-lg mb-6" x-text="success"></div>
+        <form @submit.prevent="resetPassword()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+            <input x-model="form.email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Kode Reset (6 digit)</label>
+            <input x-model="form.resetCode" type="text" maxlength="6" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 tracking-widest text-center" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Password Baru</label>
+            <input x-model="form.newPassword" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <button type="submit" class="w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 mt-2" :disabled="loading">
+            <span x-show="!loading">Reset Password</span>
+            <span x-show="loading">Loading...</span>
+          </button>
+        </form>
+        <p class="text-center text-sm text-gray-500 mt-6"><a @click.prevent="navigate('login')" href="#" class="text-gray-900 font-medium hover:underline">Kembali ke Login</a></p>
       </div>
 
       <!-- REGISTER -->
@@ -374,7 +421,7 @@
           applyJobCompany: '',
           applyJobId: 0,
           applyForm: { fullName: '', phone: '', cvFile: null, photoFile: null },
-          form: { name: '', email: '', password: '', role: 'jobseeker', title: '', companyName: '', description: '', location: '', salary: '' },
+          form: { name: '', email: '', password: '', role: 'jobseeker', resetCode: '', newPassword: '', title: '', companyName: '', description: '', location: '', salary: '' },
 
           init: function () {
             var savedToken = localStorage.getItem('token');
@@ -429,6 +476,31 @@
               this.form.name = ''; this.form.email = ''; this.form.password = ''; this.form.role = 'jobseeker';
               var self = this;
               setTimeout(function () { self.navigate('login'); }, 1500);
+            } catch (err) { this.error = err.message; } finally { this.loading = false; }
+          },
+
+          forgotPassword: async function () {
+            this.loading = true; this.error = ''; this.success = '';
+            try {
+              var res = await fetch(API_URL + '/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: this.form.email }) });
+              var data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Gagal mengirim kode');
+              this.success = 'Kode reset: ' + data.code + ' (berlaku 15 menit)';
+              var self = this;
+              setTimeout(function () { self.navigate('reset'); }, 3000);
+            } catch (err) { this.error = err.message; } finally { this.loading = false; }
+          },
+
+          resetPassword: async function () {
+            this.loading = true; this.error = ''; this.success = '';
+            try {
+              var res = await fetch(API_URL + '/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: this.form.email, code: this.form.resetCode, newPassword: this.form.newPassword }) });
+              var data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Gagal reset password');
+              this.success = 'Password berhasil diubah! Silakan login.';
+              this.form.email = ''; this.form.resetCode = ''; this.form.newPassword = '';
+              var self = this;
+              setTimeout(function () { self.navigate('login'); }, 2000);
             } catch (err) { this.error = err.message; } finally { this.loading = false; }
           },
 

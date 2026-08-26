@@ -30,6 +30,8 @@ window.app = function () {
       email: '',
       password: '',
       role: 'jobseeker',
+      resetCode: '',
+      newPassword: '',
       title: '',
       companyName: '',
       description: '',
@@ -116,6 +118,59 @@ window.app = function () {
         this.form.role = 'jobseeker';
         var self = this;
         setTimeout(function () { self.navigate('login'); }, 1500);
+      } catch (err) {
+        this.error = err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    forgotPassword: async function () {
+      this.loading = true;
+      this.error = '';
+      this.success = '';
+      try {
+        var res = await fetch(API_URL + '/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: this.form.email }),
+        });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal mengirim kode');
+
+        this.success = 'Kode reset: ' + data.code + ' (berlaku 15 menit)';
+        var self = this;
+        setTimeout(function () { self.navigate('reset'); }, 3000);
+      } catch (err) {
+        this.error = err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    resetPassword: async function () {
+      this.loading = true;
+      this.error = '';
+      this.success = '';
+      try {
+        var res = await fetch(API_URL + '/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: this.form.email,
+            code: this.form.resetCode,
+            newPassword: this.form.newPassword,
+          }),
+        });
+        var data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Gagal reset password');
+
+        this.success = 'Password berhasil diubah! Silakan login.';
+        this.form.email = '';
+        this.form.resetCode = '';
+        this.form.newPassword = '';
+        var self = this;
+        setTimeout(function () { self.navigate('login'); }, 2000);
       } catch (err) {
         this.error = err.message;
       } finally {
