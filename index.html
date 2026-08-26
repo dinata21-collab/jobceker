@@ -183,8 +183,8 @@
                 <thead class="bg-gray-50 text-left text-gray-500 text-xs uppercase tracking-wide">
                   <tr>
                     <th class="px-5 py-3 font-medium">Pelamar</th>
+                    <th class="px-5 py-3 font-medium">Telepon</th>
                     <th class="px-5 py-3 font-medium">Lowongan</th>
-                    <th class="px-5 py-3 font-medium">Perusahaan</th>
                     <th class="px-5 py-3 font-medium">Tanggal</th>
                     <th class="px-5 py-3 font-medium">Status</th>
                     <th class="px-5 py-3 font-medium text-right">Aksi</th>
@@ -194,11 +194,20 @@
                   <template x-for="app in applications" :key="app.id">
                     <tr class="hover:bg-gray-50">
                       <td class="px-5 py-3.5">
-                        <div class="font-medium" x-text="app.fullName"></div>
-                        <div class="text-xs text-gray-400" x-text="app.applicant.email"></div>
+                        <div class="flex items-center gap-3">
+                          <img x-show="app.photoUrl" :src="app.photoUrl" class="w-10 h-10 rounded-full object-cover border" />
+                          <div x-show="!app.photoUrl" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-sm font-medium" x-text="app.fullName.charAt(0)"></div>
+                          <div>
+                            <div class="font-medium" x-text="app.fullName"></div>
+                            <div class="text-xs text-gray-400" x-text="app.applicant.email"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-5 py-3.5">
+                        <div class="text-sm" x-text="app.phone || '-'"></div>
+                        <a x-show="app.phone" :href="'https://wa.me/' + app.phone.replace(/[^0-9]/g, '')" target="_blank" class="text-xs text-emerald-600 hover:underline">Chat WA</a>
                       </td>
                       <td class="px-5 py-3.5" x-text="app.job.title"></td>
-                      <td class="px-5 py-3.5 text-gray-600" x-text="app.job.companyName"></td>
                       <td class="px-5 py-3.5 text-gray-500 text-xs" x-text="new Date(app.appliedAt).toLocaleDateString('id-ID')"></td>
                       <td class="px-5 py-3.5">
                         <select x-effect="$el.value = app.status" @change="updateStatus(app.id, $event.target.value)" class="text-xs font-medium rounded-lg px-2 py-1 border border-gray-200 focus:outline-none" :class="{
