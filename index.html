@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Job Portal</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/src/main.js"></script>
+    <style>
+      [x-cloak] { display: none !important; }
+      body { font-family: 'Inter', sans-serif; }
+    </style>
+  </head>
+  <body class="bg-white min-h-screen text-gray-900">
+    <div id="app" x-data="app()" x-cloak>
+      <!-- NAVBAR -->
+      <nav class="border-b border-gray-200">
+        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+          <span class="text-lg font-bold cursor-pointer" @click="navigate(user ? 'jobs' : 'login')">Jobceker</span>
+          <div class="flex items-center gap-4 text-sm">
+            <template x-if="!user">
+              <div class="flex items-center gap-4">
+                <button @click="navigate('login')" class="text-gray-600 hover:text-gray-900">Login</button>
+                <button @click="navigate('register')" class="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800">Daftar</button>
+              </div>
+            </template>
+            <template x-if="user && user.role === 'admin'">
+              <button @click="navigate('admin')" class="text-gray-600 hover:text-gray-900">Admin</button>
+            </template>
+            <template x-if="user">
+              <div class="flex items-center gap-4">
+                <span class="text-gray-500" x-text="user.name"></span>
+                <button @click="logout()" class="text-gray-400 hover:text-red-500">Logout</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </nav>
+
+      <!-- LOGIN -->
+      <div x-show="page === 'login'" x-transition class="max-w-sm mx-auto mt-24 px-6">
+        <h1 class="text-2xl font-bold mb-1">Masuk</h1>
+        <p class="text-gray-500 text-sm mb-8">Selamat datang kembali</p>
+        <div x-show="error" class="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-6" x-text="error"></div>
+        <form @submit.prevent="login()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+            <input x-model="form.email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+            <input x-model="form.password" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <button type="submit" class="w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 mt-2" :disabled="loading">
+            <span x-show="!loading">Masuk</span>
+            <span x-show="loading">Loading...</span>
+          </button>
+        </form>
+        <p class="text-center text-sm text-gray-500 mt-6">Belum ada akun? <a @click.prevent="navigate('register')" href="#" class="text-gray-900 font-medium hover:underline">Daftar</a></p>
+      </div>
+
+      <!-- REGISTER -->
+      <div x-show="page === 'register'" x-transition class="max-w-sm mx-auto mt-24 px-6">
+        <h1 class="text-2xl font-bold mb-1">Daftar</h1>
+        <p class="text-gray-500 text-sm mb-8">Buat akun baru</p>
+        <div x-show="error" class="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-6" x-text="error"></div>
+        <div x-show="success" class="bg-green-50 text-green-600 text-sm p-3 rounded-lg mb-6" x-text="success"></div>
+        <form @submit.prevent="register()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Nama</label>
+            <input x-model="form.name" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+            <input x-model="form.email" type="email" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+            <input x-model="form.password" type="password" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Peran</label>
+            <select x-model="form.role" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900">
+              <option value="jobseeker">Pencari Kerja</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 mt-2" :disabled="loading">
+            <span x-show="!loading">Daftar</span>
+            <span x-show="loading">Loading...</span>
+          </button>
+        </form>
+        <p class="text-center text-sm text-gray-500 mt-6">Sudah punya akun? <a @click.prevent="navigate('login')" href="#" class="text-gray-900 font-medium hover:underline">Masuk</a></p>
+      </div>
+
+      <!-- JOBS -->
+      <div x-show="page === 'jobs'" x-transition class="max-w-5xl mx-auto py-10 px-6">
+        <h1 class="text-2xl font-bold mb-1">Lowongan Kerja</h1>
+        <p class="text-gray-500 text-sm mb-8">Temukan pekerjaan yang cocok untukmu</p>
+        <div x-show="jobs.length === 0" class="text-center py-20 text-gray-400">Belum ada lowongan</div>
+        <div class="space-y-3">
+          <template x-for="job in jobs" :key="job.id">
+            <div class="border border-gray-200 rounded-lg p-5 hover:border-gray-400 transition">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-semibold" x-text="job.title"></h3>
+                  <p class="text-sm text-gray-500 mt-0.5" x-text="job.companyName"></p>
+                </div>
+                <span class="text-sm font-medium text-emerald-600" x-text="job.salary || 'Negosiasi'"></span>
+              </div>
+              <div class="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                <span x-text="job.location || 'Remote'"></span>
+                <span class="text-gray-300">|</span>
+                <span class="line-clamp-1" x-text="job.description"></span>
+              </div>
+              <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                <button x-show="user && user.role === 'jobseeker'" @click="openApplyModal(job)" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800">Lamar</button>
+                <button x-show="!user" @click="navigate('login')" class="text-sm text-gray-500 hover:text-gray-900">Login untuk melamar</button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ADMIN -->
+      <div x-show="page === 'admin'" x-transition class="max-w-5xl mx-auto py-10 px-6">
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-bold">Admin Panel</h1>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+          <button @click="adminTab = 'jobs'; loadJobs()" :class="adminTab === 'jobs' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Lowongan</button>
+          <button @click="adminTab = 'applications'; loadApplications()" :class="adminTab === 'applications' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Lamaran</button>
+        </div>
+
+        <!-- Tab Lowongan -->
+        <div x-show="adminTab === 'jobs'">
+          <div class="flex items-center justify-between mb-4">
+            <p class="text-gray-500 text-sm" x-text="jobs.length + ' lowongan tersedia'"></p>
+            <button @click="openModal()" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800">+ Tambah</button>
+          </div>
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 text-left text-gray-500 text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="px-5 py-3 font-medium">Judul</th>
+                  <th class="px-5 py-3 font-medium">Perusahaan</th>
+                  <th class="px-5 py-3 font-medium">Lokasi</th>
+                  <th class="px-5 py-3 font-medium">Gaji</th>
+                  <th class="px-5 py-3 font-medium text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <template x-for="job in jobs" :key="job.id">
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-5 py-3.5 font-medium" x-text="job.title"></td>
+                    <td class="px-5 py-3.5 text-gray-600" x-text="job.companyName"></td>
+                    <td class="px-5 py-3.5 text-gray-500" x-text="job.location || '-'"></td>
+                    <td class="px-5 py-3.5 text-gray-500" x-text="job.salary || '-'"></td>
+                    <td class="px-5 py-3.5 text-right">
+                      <button @click="editJob(job)" class="text-gray-400 hover:text-amber-600 mr-3">Edit</button>
+                      <button @click="deleteJob(job.id)" class="text-gray-400 hover:text-red-500">Hapus</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab Lamaran -->
+        <div x-show="adminTab === 'applications'">
+          <div class="flex items-center justify-between mb-4">
+            <p class="text-gray-500 text-sm" x-text="applications.length + ' lamaran masuk'"></p>
+            <button @click="exportExcel()" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              Download Excel
+            </button>
+          </div>
+          <div x-show="applications.length === 0" class="text-center py-16 text-gray-400 border border-gray-200 rounded-lg">Belum ada lamaran masuk</div>
+          <div x-show="applications.length > 0" class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-left text-gray-500 text-xs uppercase tracking-wide">
+                  <tr>
+                    <th class="px-5 py-3 font-medium">Pelamar</th>
+                    <th class="px-5 py-3 font-medium">Lowongan</th>
+                    <th class="px-5 py-3 font-medium">Perusahaan</th>
+                    <th class="px-5 py-3 font-medium">Tanggal</th>
+                    <th class="px-5 py-3 font-medium">Status</th>
+                    <th class="px-5 py-3 font-medium text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <template x-for="app in applications" :key="app.id">
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-5 py-3.5">
+                        <div class="font-medium" x-text="app.fullName"></div>
+                        <div class="text-xs text-gray-400" x-text="app.applicant.email"></div>
+                      </td>
+                      <td class="px-5 py-3.5" x-text="app.job.title"></td>
+                      <td class="px-5 py-3.5 text-gray-600" x-text="app.job.companyName"></td>
+                      <td class="px-5 py-3.5 text-gray-500 text-xs" x-text="new Date(app.appliedAt).toLocaleDateString('id-ID')"></td>
+                      <td class="px-5 py-3.5">
+                        <select x-effect="$el.value = app.status" @change="updateStatus(app.id, $event.target.value)" class="text-xs font-medium rounded-lg px-2 py-1 border border-gray-200 focus:outline-none" :class="{
+                          'bg-yellow-50 text-yellow-700': app.status === 'pending',
+                          'bg-blue-50 text-blue-700': app.status === 'review',
+                          'bg-green-50 text-green-700': app.status === 'accepted',
+                          'bg-red-50 text-red-700': app.status === 'rejected'
+                        }">
+                          <option value="pending">Pending</option>
+                          <option value="review">Review</option>
+                          <option value="accepted">Diterima</option>
+                          <option value="rejected">Ditolak</option>
+                        </select>
+                      </td>
+                      <td class="px-5 py-3.5 text-right">
+                        <a :href="'http://localhost:3000' + app.resumeUrl" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs font-medium">Lihat CV</a>
+                      </td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL EDIT/CREATE JOB -->
+      <div x-show="showModal" x-transition.opacity class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div @click.away="showModal = false" class="bg-white rounded-xl w-full max-w-md p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-bold text-lg" x-text="editingJob ? 'Edit Lowongan' : 'Lowongan Baru'"></h3>
+            <button @click="showModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
+          </div>
+          <form @submit.prevent="saveJob()" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Judul</label>
+              <input x-model="form.title" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-900" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Perusahaan</label>
+              <input x-model="form.companyName" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-900" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
+              <textarea x-model="form.description" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-900 resize-none" rows="3" required></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
+                <input x-model="form.location" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-900">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Gaji</label>
+                <input x-model="form.salary" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-900">
+              </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button type="submit" class="flex-1 bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800">Simpan</button>
+              <button type="button" @click="showModal = false" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-200">Batal</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- MODAL LAMAR -->
+      <div x-show="showApplyModal" x-transition.opacity class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div @click.away="showApplyModal = false" class="bg-white rounded-xl w-full max-w-md p-6">
+          <div class="flex items-center justify-between mb-5">
+            <div>
+              <h3 class="font-bold text-lg">Lamar Pekerjaan</h3>
+              <p class="text-sm text-gray-500" x-text="applyJobTitle + ' - ' + applyJobCompany"></p>
+            </div>
+            <button @click="showApplyModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
+          </div>
+          <div x-show="error" class="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4" x-text="error"></div>
+          <div x-show="success" class="bg-green-50 text-green-600 text-sm p-3 rounded-lg mb-4" x-text="success"></div>
+          <form @submit.prevent="submitApplication()" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap *</label>
+              <input x-model="applyForm.fullName" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-900" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
+              <input x-model="applyForm.phone" type="tel" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-900">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Upload CV (PDF/DOC) *</label>
+              <input type="file" accept=".pdf,.doc,.docx" @change="applyForm.cvFile = $event.target.files[0]" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Foto Data Diri (JPG/PNG)</label>
+              <input type="file" accept=".jpg,.jpeg,.png" @change="applyForm.photoFile = $event.target.files[0]" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button type="submit" class="flex-1 bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-800" :disabled="loading">
+                <span x-show="!loading">Kirim Lamaran</span>
+                <span x-show="loading">Mengirim...</span>
+              </button>
+              <button type="button" @click="showApplyModal = false" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-200">Batal</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
