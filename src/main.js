@@ -16,6 +16,10 @@ window.app = function () {
     applications: [],
     appliedJobs: [],
     myApplications: [],
+    superadminTab: 'overview',
+    allJobs: [],
+    allUsers: [],
+    superStats: {},
     applyJobTitle: '',
     applyJobCompany: '',
     applyJobId: 0,
@@ -63,6 +67,10 @@ window.app = function () {
       if (page === 'admin') {
         this.loadMyJobs();
         this.loadApplications();
+      }
+      if (page === 'developer') {
+        this.loadSuperStats();
+        this.loadAllJobs();
       }
     },
 
@@ -418,6 +426,72 @@ window.app = function () {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+
+    loadSuperStats: async function () {
+      try {
+        var res = await fetch(API_URL + '/superadmin/stats', {
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        var data = await res.json();
+        this.superStats = data.data || {};
+      } catch (err) {
+        console.error('Gagal load stats:', err);
+      }
+    },
+
+    loadAllJobs: async function () {
+      try {
+        var res = await fetch(API_URL + '/superadmin/jobs', {
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        var data = await res.json();
+        this.allJobs = data.data || [];
+      } catch (err) {
+        console.error('Gagal load all jobs:', err);
+      }
+    },
+
+    loadAllUsers: async function () {
+      try {
+        var res = await fetch(API_URL + '/superadmin/users', {
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        var data = await res.json();
+        this.allUsers = data.data || [];
+      } catch (err) {
+        console.error('Gagal load all users:', err);
+      }
+    },
+
+    superDeleteJob: async function (id) {
+      if (!confirm('Yakin ingin menghapus job ini?')) return;
+      try {
+        var res = await fetch(API_URL + '/superadmin/jobs/' + id, {
+          method: 'DELETE',
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        if (!res.ok) throw new Error('Gagal menghapus job');
+        await this.loadAllJobs();
+        await this.loadSuperStats();
+      } catch (err) {
+        this.error = err.message;
+      }
+    },
+
+    superDeleteUser: async function (id) {
+      if (!confirm('Yakin ingin menghapus user ini? Semua data terkait akan ikut terhapus.')) return;
+      try {
+        var res = await fetch(API_URL + '/superadmin/users/' + id, {
+          method: 'DELETE',
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        if (!res.ok) throw new Error('Gagal menghapus user');
+        await this.loadAllUsers();
+        await this.loadSuperStats();
       } catch (err) {
         this.error = err.message;
       }

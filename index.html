@@ -30,6 +30,9 @@
             <template x-if="user && user.role === 'admin'">
               <button @click="navigate('admin')" class="text-gray-600 hover:text-gray-900">Admin</button>
             </template>
+            <template x-if="user && user.role === 'superadmin'">
+              <button @click="navigate('developer')" class="text-gray-600 hover:text-gray-900">Developer</button>
+            </template>
             <template x-if="user && user.role === 'jobseeker'">
               <button @click="navigate('history')" class="text-gray-600 hover:text-gray-900">Riwayat Lamaran</button>
             </template>
@@ -320,6 +323,111 @@
         </div>
       </div>
 
+      <!-- DEVELOPER PANEL -->
+      <div x-show="page === 'developer'" x-transition class="max-w-5xl mx-auto py-10 px-6">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-bold">Developer Panel</h1>
+            <p class="text-gray-500 text-sm mt-0.5">Kelola semua data sistem</p>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-gray-900" x-text="superStats.totalUsers || 0"></div>
+            <div class="text-xs text-gray-500">Total Users</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-gray-900" x-text="superStats.totalAdmins || 0"></div>
+            <div class="text-xs text-gray-500">Admins</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-gray-900" x-text="superStats.totalJobs || 0"></div>
+            <div class="text-xs text-gray-500">Lowongan</div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-gray-900" x-text="superStats.totalApplications || 0"></div>
+            <div class="text-xs text-gray-500">Lamaran</div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+          <button @click="superadminTab = 'jobs'; loadAllJobs()" :class="superadminTab === 'jobs' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Semua Lowongan</button>
+          <button @click="superadminTab = 'users'; loadAllUsers()" :class="superadminTab === 'users' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Semua User</button>
+        </div>
+
+        <!-- Tab Semua Lowongan -->
+        <div x-show="superadminTab === 'jobs'">
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 text-left text-gray-500 text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="px-5 py-3 font-medium">Lowongan</th>
+                  <th class="px-5 py-3 font-medium">Admin</th>
+                  <th class="px-5 py-3 font-medium">Lamaran</th>
+                  <th class="px-5 py-3 font-medium">Tanggal</th>
+                  <th class="px-5 py-3 font-medium text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <template x-for="job in allJobs" :key="job.id">
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-5 py-3.5">
+                      <div class="font-medium" x-text="job.title"></div>
+                      <div class="text-xs text-gray-400" x-text="job.companyName"></div>
+                    </td>
+                    <td class="px-5 py-3.5 text-gray-500 text-xs" x-text="job.admin.name"></td>
+                    <td class="px-5 py-3.5 text-gray-500" x-text="job._count.applications"></td>
+                    <td class="px-5 py-3.5 text-gray-500 text-xs" x-text="new Date(job.createdAt).toLocaleDateString('id-ID')"></td>
+                    <td class="px-5 py-3.5 text-right">
+                      <button @click="superDeleteJob(job.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">Hapus</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab Semua User -->
+        <div x-show="superadminTab === 'users'">
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 text-left text-gray-500 text-xs uppercase tracking-wide">
+                <tr>
+                  <th class="px-5 py-3 font-medium">Nama</th>
+                  <th class="px-5 py-3 font-medium">Email</th>
+                  <th class="px-5 py-3 font-medium">Role</th>
+                  <th class="px-5 py-3 font-medium">Terdaftar</th>
+                  <th class="px-5 py-3 font-medium text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <template x-for="u in allUsers" :key="u.id">
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-5 py-3.5 font-medium" x-text="u.name"></td>
+                    <td class="px-5 py-3.5 text-gray-500" x-text="u.email"></td>
+                    <td class="px-5 py-3.5">
+                      <span class="text-xs font-medium px-2 py-1 rounded-full" :class="{
+                        'bg-purple-50 text-purple-700': u.role === 'superadmin',
+                        'bg-blue-50 text-blue-700': u.role === 'admin',
+                        'bg-gray-100 text-gray-600': u.role === 'jobseeker'
+                      }" x-text="u.role"></span>
+                    </td>
+                    <td class="px-5 py-3.5 text-gray-500 text-xs" x-text="new Date(u.createdAt).toLocaleDateString('id-ID')"></td>
+                    <td class="px-5 py-3.5 text-right">
+                      <button x-show="u.role !== 'superadmin'" @click="superDeleteUser(u.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">Hapus</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- MODAL EDIT/CREATE JOB -->
       <div x-show="showModal" x-transition.opacity class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
         <div @click.away="showModal = false" class="bg-white rounded-xl w-full max-w-md p-6">
@@ -417,6 +525,11 @@
           applications: [],
           appliedJobs: [],
           myApplications: [],
+          superadminTab: 'overview',
+          allJobs: [],
+          allUsers: [],
+          superStats: {},
+          myApplications: [],
           applyJobTitle: '',
           applyJobCompany: '',
           applyJobId: 0,
@@ -442,6 +555,7 @@
             if (page === 'jobs') { this.loadJobs(); if (this.user && this.user.role === 'jobseeker') this.loadAppliedJobs(); }
             if (page === 'history') this.loadMyApplications();
             if (page === 'admin') { this.loadMyJobs(); this.loadApplications(); }
+            if (page === 'developer') { this.loadSuperStats(); this.loadAllJobs(); }
           },
 
           login: async function () {
@@ -633,6 +747,48 @@
               var a = document.createElement('a'); a.href = url; a.download = 'lamaran.xlsx';
               document.body.appendChild(a); a.click(); document.body.removeChild(a);
               window.URL.revokeObjectURL(url);
+            } catch (err) { this.error = err.message; }
+          },
+
+          loadSuperStats: async function () {
+            try {
+              var res = await fetch(API_URL + '/superadmin/stats', { headers: { Authorization: 'Bearer ' + this.token } });
+              var data = await res.json();
+              this.superStats = data.data || {};
+            } catch (err) { console.error('Gagal load stats:', err); }
+          },
+
+          loadAllJobs: async function () {
+            try {
+              var res = await fetch(API_URL + '/superadmin/jobs', { headers: { Authorization: 'Bearer ' + this.token } });
+              var data = await res.json();
+              this.allJobs = data.data || [];
+            } catch (err) { console.error('Gagal load all jobs:', err); }
+          },
+
+          loadAllUsers: async function () {
+            try {
+              var res = await fetch(API_URL + '/superadmin/users', { headers: { Authorization: 'Bearer ' + this.token } });
+              var data = await res.json();
+              this.allUsers = data.data || [];
+            } catch (err) { console.error('Gagal load all users:', err); }
+          },
+
+          superDeleteJob: async function (id) {
+            if (!confirm('Yakin ingin menghapus job ini?')) return;
+            try {
+              var res = await fetch(API_URL + '/superadmin/jobs/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + this.token } });
+              if (!res.ok) throw new Error('Gagal menghapus job');
+              await this.loadAllJobs(); await this.loadSuperStats();
+            } catch (err) { this.error = err.message; }
+          },
+
+          superDeleteUser: async function (id) {
+            if (!confirm('Yakin ingin menghapus user ini?')) return;
+            try {
+              var res = await fetch(API_URL + '/superadmin/users/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + this.token } });
+              if (!res.ok) throw new Error('Gagal menghapus user');
+              await this.loadAllUsers(); await this.loadSuperStats();
             } catch (err) { this.error = err.message; }
           },
         };
