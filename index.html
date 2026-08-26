@@ -131,7 +131,7 @@
           <h1 class="text-2xl font-bold">Admin Panel</h1>
         </div>
         <div class="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
-          <button @click="adminTab = 'jobs'; loadJobs()" :class="adminTab === 'jobs' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Lowongan</button>
+          <button @click="adminTab = 'jobs'; loadMyJobs()" :class="adminTab === 'jobs' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Lowongan</button>
           <button @click="adminTab = 'applications'; loadApplications()" :class="adminTab === 'applications' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'" class="px-4 py-2 rounded-md text-sm font-medium transition">Lamaran</button>
         </div>
         <div x-show="adminTab === 'jobs'">
@@ -341,7 +341,7 @@
             this.success = '';
             this.adminTab = 'jobs';
             if (page === 'jobs') this.loadJobs();
-            if (page === 'admin') { this.loadJobs(); this.loadApplications(); }
+            if (page === 'admin') { this.loadMyJobs(); this.loadApplications(); }
           },
 
           login: async function () {
@@ -393,6 +393,14 @@
             } catch (err) { console.error('Gagal load jobs:', err); }
           },
 
+          loadMyJobs: async function () {
+            try {
+              var res = await fetch(API_URL + '/jobs/my', { headers: { Authorization: 'Bearer ' + this.token } });
+              var data = await res.json();
+              this.jobs = data.data || [];
+            } catch (err) { console.error('Gagal load my jobs:', err); }
+          },
+
           openModal: function (job) {
             this.editingJob = job || null;
             if (job) {
@@ -413,7 +421,7 @@
               var method = this.editingJob ? 'PUT' : 'POST';
               var res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + this.token }, body: JSON.stringify(body) });
               if (!res.ok) { var data = await res.json(); throw new Error(data.error || 'Gagal menyimpan job'); }
-              this.showModal = false; this.editingJob = null; await this.loadJobs();
+              this.showModal = false; this.editingJob = null; await this.loadMyJobs();
             } catch (err) { this.error = err.message; }
           },
 
@@ -422,7 +430,7 @@
             try {
               var res = await fetch(API_URL + '/jobs/' + id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + this.token } });
               if (!res.ok) throw new Error('Gagal menghapus job');
-              await this.loadJobs();
+              await this.loadMyJobs();
             } catch (err) { this.error = err.message; }
           },
 

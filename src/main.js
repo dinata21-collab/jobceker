@@ -52,7 +52,7 @@ window.app = function () {
       this.adminTab = 'jobs';
       if (page === 'jobs') this.loadJobs();
       if (page === 'admin') {
-        this.loadJobs();
+        this.loadMyJobs();
         this.loadApplications();
       }
     },
@@ -134,6 +134,18 @@ window.app = function () {
       }
     },
 
+    loadMyJobs: async function () {
+      try {
+        var res = await fetch(API_URL + '/jobs/my', {
+          headers: { Authorization: 'Bearer ' + this.token },
+        });
+        var data = await res.json();
+        this.jobs = data.data || [];
+      } catch (err) {
+        console.error('Gagal load my jobs:', err);
+      }
+    },
+
     openModal: function (job) {
       this.editingJob = job || null;
       if (job) {
@@ -187,7 +199,11 @@ window.app = function () {
 
         this.showModal = false;
         this.editingJob = null;
-        await this.loadJobs();
+        if (this.user && this.user.role === 'admin') {
+          await this.loadMyJobs();
+        } else {
+          await this.loadJobs();
+        }
       } catch (err) {
         this.error = err.message;
       }
@@ -203,7 +219,11 @@ window.app = function () {
         });
 
         if (!res.ok) throw new Error('Gagal menghapus job');
-        await this.loadJobs();
+        if (this.user && this.user.role === 'admin') {
+          await this.loadMyJobs();
+        } else {
+          await this.loadJobs();
+        }
       } catch (err) {
         this.error = err.message;
       }
