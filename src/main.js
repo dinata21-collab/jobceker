@@ -148,7 +148,7 @@ window.app = function () {
         var data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal mengirim kode');
 
-        this.success = 'Kode reset: ' + data.code + ' (berlaku 15 menit)';
+        this.success = 'Kode reset telah dikirim ke email anda (berlaku 15 menit)';
         var self = this;
         setTimeout(function () { self.navigate('reset'); }, 3000);
       } catch (err) {
@@ -276,6 +276,12 @@ window.app = function () {
     },
 
     saveJob: async function () {
+      this.error = ''; this.success = '';
+      if (!this.form.title || !this.form.companyName || !this.form.description) {
+        this.error = 'Judul, Perusahaan, dan Deskripsi wajib diisi';
+        return;
+      }
+      this.loading = true;
       var body = {
         title: this.form.title,
         companyName: this.form.companyName,
@@ -305,15 +311,18 @@ window.app = function () {
           throw new Error(data.error || 'Gagal menyimpan job');
         }
 
-        this.showModal = false;
-        this.editingJob = null;
+        this.success = this.editingJob ? 'Lowongan berhasil diupdate!' : 'Lowongan berhasil ditambahkan!';
         if (this.user && this.user.role === 'admin') {
           await this.loadMyJobs();
         } else {
           await this.loadJobs();
         }
+        var self = this;
+        setTimeout(function () { self.showModal = false; self.editingJob = null; self.success = ''; }, 1500);
       } catch (err) {
         this.error = err.message;
+      } finally {
+        this.loading = false;
       }
     },
 
@@ -327,11 +336,14 @@ window.app = function () {
         });
 
         if (!res.ok) throw new Error('Gagal menghapus job');
+        this.success = 'Lowongan berhasil dihapus!';
         if (this.user && this.user.role === 'admin') {
           await this.loadMyJobs();
         } else {
           await this.loadJobs();
         }
+        var self = this;
+        setTimeout(function () { self.success = ''; }, 2000);
       } catch (err) {
         this.error = err.message;
       }
